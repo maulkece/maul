@@ -48,12 +48,19 @@ export default function Home() {
   const [edits, setEdits] = useState<Edit[]>([]);
   const [showAdmin, setShowAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const supabase = createClient();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          setError('Supabase environment variables not configured');
+          setLoading(false);
+          return;
+        }
+
         // Fetch profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -93,6 +100,7 @@ export default function Home() {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        setError('Failed to load data');
       } finally {
         setLoading(false);
       }
@@ -114,6 +122,22 @@ export default function Home() {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [showAdmin]);
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-green-900">
+        <div className="bg-red-900 text-white p-8 rounded-lg max-w-md">
+          <h2 className="text-xl font-bold mb-2">Configuration Error</h2>
+          <p className="mb-4">{error}</p>
+          <p className="text-sm">Please add Supabase environment variables to Vercel project settings:</p>
+          <ul className="text-sm mt-2 space-y-1">
+            <li>- NEXT_PUBLIC_SUPABASE_URL</li>
+            <li>- NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
